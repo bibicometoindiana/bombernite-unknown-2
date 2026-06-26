@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bombernite Unknown 2</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💣</text></svg>">
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Connection Status -->
+    <div id="connection-status" class="hidden">
+      <div class="status-dot"></div>
+      <span id="status-text">Verbinden...</span>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="menu-screen" class="screen active">
+      <div class="menu-container">
+        <div class="title-wrapper">
+          <div class="title-bomb">💣</div>
+          <h1 class="game-title">BOMBERNITE</h1>
+          <h2 class="game-subtitle">UNKNOWN 2</h2>
+          <div class="title-separator">✦ ✦ ✦</div>
+        </div>
+
+        <div class="menu-content">
+          <div class="player-name-input">
+            <label for="player-name">SPIELERNAME</label>
+            <input type="text" id="player-name" maxlength="12" placeholder="Bomber" autocomplete="off">
+          </div>
+
+          <div class="menu-buttons">
+            <button id="btn-quick-join" class="menu-btn primary">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">QUICK JOIN</span>
+            </button>
+            <button id="btn-create-room" class="menu-btn">
+              <span class="btn-icon">🏠</span>
+              <span class="btn-text">RAUM ERSTELLEN</span>
+            </button>
+          </div>
+
+          <div id="room-list-section" class="room-list-section hidden">
+            <h3>VERFÜGBARE RÄUME</h3>
+            <div id="room-list"></div>
+          </div>
+        </div>
+
+        <div class="menu-footer">
+          <div class="controls-info">
+            <span>← ↑ → ↓</span> Bewegen &nbsp;|&nbsp; <span>SPACE</span> Bombe &nbsp;|&nbsp; <span>ESC</span> Menü
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="screen hidden">
+      <div class="lobby-container">
+        <h2 class="lobby-title">RAUM: <span id="room-name">---</span></h2>
+        <div id="player-list" class="player-list">
+          <div class="player-slot empty">
+            <span class="slot-icon">◻</span>
+            <span class="slot-name">Wartet auf Spieler...</span>
+          </div>
+        </div>
+        <div class="lobby-actions">
+          <button id="btn-start-game" class="menu-btn primary">
+            <span class="btn-icon">▶</span>
+            <span class="btn-text">SPIEL STARTEN</span>
+          </button>
+          <button id="btn-leave-lobby" class="menu-btn secondary">
+            <span class="btn-text">VERLASSEN</span>
+          </button>
+        </div>
+        <div class="lobby-info">Mindestens 2 Spieler benötigt</div>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden">
+      <!-- HUD -->
+      <div id="hud" class="hud">
+        <div id="powerup-indicators" class="powerup-bar"></div>
+        <div id="countdown-overlay" class="countdown hidden"></div>
+      </div>
+
+      <!-- Game Canvas -->
+      <div id="canvas-container">
+        <canvas id="game-canvas"></canvas>
+      </div>
+
+      <!-- Game Over Overlay -->
+      <div id="game-over-overlay" class="overlay hidden">
+        <div class="overlay-content">
+          <h1 id="game-over-title">GAME OVER</h1>
+          <div id="winner-display" class="winner-display"></div>
+          <div id="finish-order" class="finish-order"></div>
+          <div class="overlay-buttons">
+            <button id="btn-restart" class="menu-btn primary">
+              <span class="btn-icon">🔄</span>
+              <span class="btn-text">NOCHMAL!</span>
+            </button>
+            <button id="btn-quit" class="menu-btn secondary">
+              <span class="btn-text">MENÜ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/network.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/client.js"></script>
+</body>
+</html>
