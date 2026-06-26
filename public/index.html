@@ -8,7 +8,18 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💣</text></svg>">
 </head>
 <body>
-  <div id="game-wrapper">
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-container">
+      <div class="loading-bomb">💣</div>
+      <div class="loading-bar">
+        <div class="loading-fill" id="loading-fill"></div>
+      </div>
+      <div class="loading-text" id="loading-text">Lade Spiel...</div>
+    </div>
+  </div>
+
+  <div id="game-wrapper" style="display:none">
     <!-- Connection Status -->
     <div id="connection-status" class="hidden">
       <div class="status-dot"></div>
@@ -82,7 +93,7 @@
     <!-- Game Screen -->
     <div id="game-screen" class="screen hidden">
       <!-- HUD -->
-      <div id="hud" class="hud">
+      <div id="hud" class="hud hidden">
         <div id="powerup-indicators" class="powerup-bar"></div>
         <div id="countdown-overlay" class="countdown hidden"></div>
       </div>
@@ -111,7 +122,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onload="onThreeJsReady()"></script>
   <script src="js/audio.js"></script>
   <script src="js/input.js"></script>
   <script src="js/network.js"></script>

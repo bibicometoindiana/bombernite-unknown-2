@@ -158,19 +158,34 @@ class UIManager {
   // --- Connection status ---
   setConnectionStatus(connected) {
     const status = document.getElementById('connection-status');
+    if (!status) return;
     const dot = status.querySelector('.status-dot');
     const text = document.getElementById('status-text');
 
     status.classList.remove('hidden');
     dot.className = 'status-dot';
 
+    if (this._statusTimer) {
+      clearTimeout(this._statusTimer);
+      this._statusTimer = null;
+    }
+
     if (connected) {
       dot.classList.add('connected');
       text.textContent = 'Verbunden';
-      setTimeout(() => status.classList.add('hidden'), 3000);
+      this._statusTimer = setTimeout(() => status.classList.add('hidden'), 2000);
     } else {
       dot.classList.add('disconnected');
-      text.textContent = 'Getrennt';
+      text.textContent = 'Getrennt – Verbinde neu...';
+      // Auto-hide after 5 seconds so it doesn't stay stuck
+      this._statusTimer = setTimeout(() => {
+        if (this.currentScreen === 'game-screen') {
+          // In-game: keep showing so player knows
+          text.textContent = '⛔ Verbindung verloren';
+        } else {
+          status.classList.add('hidden');
+        }
+      }, 5000);
     }
   }
 

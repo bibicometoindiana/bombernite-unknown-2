@@ -1,5 +1,5 @@
 // ============================================================
-// network.js - WebSocket Client
+// network.js - WebSocket Client with Keepalive + Auto-Reconnect
 // ============================================================
 
 class NetworkClient {
@@ -10,10 +10,12 @@ class NetworkClient {
     this.roomId = null;
     this.messageHandlers = {};
     this.reconnectAttempts = 0;
-    this.maxReconnect = 3;
+    this.maxReconnect = 5;
     this.serverUrl = null;
     this.onConnect = null;
     this.onDisconnect = null;
+    this._pingInterval = null;
+    this._shouldReconnect = true;
   }
 
   connect(serverUrl) {
@@ -35,6 +37,14 @@ class NetworkClient {
       this.connected = true;
       this.reconnectAttempts = 0;
       if (this.onConnect) this.onConnect();
+
+      // Start keepalive ping every 15 seconds
+      if (this._pingInterval) clearInterval(this._pingInterval);
+      this._pingInterval = setInterval(() => {
+        if (this.connected && this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.send({ type: 'ping' });
+        }
+      }, 15000);
     };
 
     this.ws.onmessage = (event) => {
@@ -49,15 +59,43 @@ class NetworkClient {
     this.ws.onclose = () => {
       console.log('[Net] Disconnected');
       this.connected = false;
+      if (this._pingInterval) {
+        clearInterval(this._pingInterval);
+        this._pingInterval = null;
+      }
       if (this.onDisconnect) this.onDisconnect();
+      this._tryReconnect();
     };
 
-    this.ws.onerror = (e) => {
-      console.error('[Net] Error:', e);
+    this.ws.onerror = () => {
+      console.error('[Net] Error');
     };
   }
 
+  _tryReconnect() {
+    if (!this._shouldReconnect) return;
+    if (this.reconnectAttempts >= this.maxReconnect) {
+      console.log('[Net] Max reconnects reached');
+      return;
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
+    this.reconnectAttempts++;
+    console.log(`[Net] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnect})`);
+
+    setTimeout(() => {
+      if (this._shouldReconnect) {
+        this.connect(this.serverUrl);
+      }
+    }, delay);
+  }
+
   disconnect() {
+    this._shouldReconnect = false;
+    if (this._pingInterval) {
+      clearInterval(this._pingInterval);
+      this._pingInterval = null;
+    }
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -66,7 +104,7 @@ class NetworkClient {
   }
 
   send(data) {
-    if (this.ws) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }
   }

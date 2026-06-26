@@ -12,14 +12,34 @@
   let lastTime = 0;
   let isHost = false;
   let playerId = null;
-  let inputTimer = null;
   let gameRunning = false;
   let lastExplosionCheck = 0;
-  let lastPowerupCheck = 0;
   let previousBombCount = 0;
+  let _threeReady = false;
 
   // --- DOM refs ---
   const $ = id => document.getElementById(id);
+
+  // Called by Three.js onload
+  window.onThreeJsReady = function() {
+    _threeReady = true;
+    console.log('[Client] Three.js geladen');
+    maybeStart();
+  };
+
+  function maybeStart() {
+    if (!_threeReady) return;
+    if (!$('canvas-container')) return;
+
+    // Hide loading, show game
+    const loading = $('loading-screen');
+    if (loading) loading.style.display = 'none';
+    const wrapper = $('game-wrapper');
+    if (wrapper) wrapper.style.display = '';
+
+    init();
+    startGameLoop();
+  }
 
   // --- Initialize ---
   function init() {
@@ -224,10 +244,6 @@
       net.leave();
       ui.showMenu();
       net.listRooms();
-      if (inputTimer) {
-        clearInterval(inputTimer);
-        inputTimer = null;
-      }
       gameRunning = false;
       audio.menuSelect();
     });
@@ -293,8 +309,27 @@
 
   // --- Start ---
   document.addEventListener('DOMContentLoaded', () => {
-    init();
-    startGameLoop();
+    // If Three.js already loaded (cached), start immediately
+    if (typeof THREE !== 'undefined') {
+      _threeReady = true;
+    }
+    // Loading bar animation
+    const fill = document.getElementById('loading-fill');
+    const text = document.getElementById('loading-text');
+    if (fill) {
+      let pct = 0;
+      const barInterval = setInterval(() => {
+        pct += 5;
+        if (pct > 90) pct = 90;
+        fill.style.width = pct + '%';
+        if (_threeReady) {
+          fill.style.width = '100%';
+          clearInterval(barInterval);
+          if (text) text.textContent = 'Fertig!';
+        }
+      }, 100);
+    }
+    maybeStart();
   });
 
   // Restore cursor when leaving game

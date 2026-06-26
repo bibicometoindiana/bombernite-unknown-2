@@ -112,6 +112,9 @@ class Renderer {
       { body: 0xffcc00, accent: 0xffdd44, name: 'Gelb' }
     ];
 
+    // Direction rotation mapping (0=down, 1=left, 2=right, 3=up) - matches server
+    this._dirRotations = [Math.PI / 2, Math.PI, 0, -Math.PI / 2];
+
     // --- Resize ---
     this._onResize = () => {
       const w = this.container.clientWidth;
@@ -292,7 +295,7 @@ class Renderer {
 
       // Main sphere
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.22, 10, 10),
+        new THREE.SphereGeometry(0.22, 8, 8),
         this.materials.bomb
       );
       mesh.position.y = 0.15;
@@ -301,7 +304,7 @@ class Renderer {
 
       // Glow
       const glow = new THREE.Mesh(
-        new THREE.SphereGeometry(0.3, 6, 6),
+        new THREE.SphereGeometry(0.3, 5, 5),
         this.materials.bombGlow
       );
       glow.position.y = 0.15;
@@ -401,7 +404,7 @@ class Renderer {
           color: pc.body, roughness: 0.4, metalness: 0.1,
           emissive: pc.body, emissiveIntensity: 0.05
         });
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.35, 8), bodyMat);
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.35, 6), bodyMat);
         body.position.y = 0.17;
         body.castShadow = true;
         group.add(body);
@@ -410,7 +413,7 @@ class Renderer {
         const headMat = new THREE.MeshStandardMaterial({
           color: 0xffddaa, roughness: 0.3, metalness: 0.0
         });
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), headMat);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 6, 6), headMat);
         head.position.y = 0.5;
         head.castShadow = true;
         group.add(head);
@@ -420,7 +423,7 @@ class Renderer {
           color: pc.body, roughness: 0.2, metalness: 0.1,
           emissive: pc.body, emissiveIntensity: 0.15
         });
-        const band = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.055, 6, 10), bandMat);
+        const band = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.055, 4, 8), bandMat);
         band.position.y = 0.42;
         band.rotation.x = Math.PI / 2;
         group.add(band);
@@ -475,9 +478,9 @@ class Renderer {
       // Set in TILE coordinates (p.x/p.y are pixels, divide by tileSize)
       mesh.group.position.set(tx, 0, tz);
 
-      // Direction
-      const rotMap = { right: 0, left: Math.PI, down: Math.PI / 2, up: -Math.PI / 2 };
-      mesh.group.rotation.y = rotMap[p.dir] || 0;
+      // Direction (0=down, 1=left, 2=right, 3=up)
+      const dirIdx = p.dir !== undefined ? p.dir : 0;
+      mesh.group.rotation.y = this._dirRotations[dirIdx] || 0;
 
       if (!p.alive) {
         mesh.group.visible = false;
