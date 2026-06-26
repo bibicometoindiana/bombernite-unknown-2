@@ -6,13 +6,20 @@ const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const path = require('path');
+const compression = require('compression');
 const { GameRoom } = require('./GameRoom');
 
 const PORT = process.env.PORT || 3000;
 
 // --- Express App ---
 const app = express();
-app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Gzip compression for all responses
+app.use(compression());
+
+// Cache static assets (1 year for lib/, 1 hour for everything else)
+app.use('/lib', express.static(path.join(__dirname, '..', 'public', 'lib'), { maxAge: 365 * 24 * 60 * 60 * 1000 }));
+app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: 60 * 60 * 1000 }));
 
 // Room management
 const rooms = new Map();
