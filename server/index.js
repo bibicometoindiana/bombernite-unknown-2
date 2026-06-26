@@ -25,8 +25,7 @@ function createRoom(name, maxPlayers) {
   return room;
 }
 
-// Create a default room
-createRoom('Bombernite Arena', 4);
+// Don't create a default room — let players create their own
 
 // API routes
 app.get('/api/rooms', (req, res) => {
@@ -118,10 +117,11 @@ wss.on('connection', (ws, req) => {
 
 // --- Handlers ---
 function handleJoin(ws, data) {
-  const room = findAvailableRoom();
+  let room = findAvailableRoom();
   if (!room) {
-    sendTo(ws, { type: 'error', message: 'Keine verfügbaren Räume' });
-    return;
+    // Auto-create a room if none available
+    room = createRoom('Bombernite Arena', 4);
+    console.log(`[+] Auto-created room ${room.id} for join`);
   }
 
   const id = room.addClient(ws, data.name || 'Bomber');

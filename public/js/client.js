@@ -23,13 +23,13 @@
 
   // --- Initialize ---
   function init() {
-    const canvas = $('game-canvas');
-    if (!canvas) {
-      console.error('Canvas not found');
+    const container = $('canvas-container');
+    if (!container) {
+      console.error('Canvas container not found');
       return;
     }
 
-    renderer = new Renderer(canvas);
+    renderer = new Renderer(container);
 
     // Set up network handlers
     setupNetwork();
