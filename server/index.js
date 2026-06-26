@@ -77,6 +77,10 @@ wss.on('connection', (ws, req) => {
           handleListRooms(ws);
           break;
 
+        case 'ping':
+          sendTo(ws, { type: 'pong' });
+          break;
+
         default:
           if (ws._room) {
             ws._room.handleMessage(ws, raw.toString());
