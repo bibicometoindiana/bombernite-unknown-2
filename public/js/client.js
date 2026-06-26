@@ -84,14 +84,14 @@
       if (ui.currentScreen === 'menu') {
         ui.updateRoomList(data.rooms);
       }
-      if (ui.currentScreen === 'lobby' || ui.currentScreen === 'game-screen') {
+      if (ui.currentScreen === 'lobby-screen' || ui.currentScreen === 'game-screen') {
         // Update room info if we're in a room
         const myRoom = data.rooms.find(r => {
           return r.players.some(p => p.id === playerId);
         });
         if (myRoom) {
           ui.roomInfo = myRoom;
-          if (ui.currentScreen === 'lobby') {
+          if (ui.currentScreen === 'lobby-screen') {
             ui.updateLobby(myRoom);
           }
         }
