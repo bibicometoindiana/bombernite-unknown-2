@@ -1,5 +1,6 @@
 // ============================================================
 // renderer.js - Three.js 3D Rendering Engine
+// Bomberman Saturn Fight!! Style
 // ============================================================
 
 class Renderer {
@@ -7,20 +8,18 @@ class Renderer {
     this.container = container;
     this.cols = 15;
     this.rows = 13;
-    this.tileSize = 1; // 1 unit per tile in 3D space
+    this.tileSize = 48; // Server pixel coords → divide by this
     this.time = 0;
 
     // --- Setup Three.js ---
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0a0a1a);
 
-    // Camera: isometric angle
     const aspect = container.clientWidth / container.clientHeight || 1.77;
     this.camera = new THREE.PerspectiveCamera(40, aspect, 0.1, 50);
     this.camera.position.set(12, 14, 12);
     this.camera.lookAt(7, 0, 6);
 
-    // Renderer
     this.renderer = null;
     try {
       this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -38,21 +37,20 @@ class Renderer {
     this.renderer.toneMappingExposure = 1.2;
     container.appendChild(this.renderer.domElement);
 
-    // Handle WebGL context loss
     this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
       e.preventDefault();
       console.warn('WebGL context lost');
     });
 
-    // --- Lighting ---
-    const ambient = new THREE.AmbientLight(0x404060, 0.6);
+    // --- Lighting (bright & colorful like Saturn) ---
+    const ambient = new THREE.AmbientLight(0x6666aa, 0.7);
     this.scene.add(ambient);
 
-    const hemi = new THREE.HemisphereLight(0x4466ff, 0x221133, 0.5);
+    const hemi = new THREE.HemisphereLight(0x88aaff, 0x443366, 0.6);
     this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xffeedd, 1.8);
-    sun.position.set(10, 18, 5);
+    const sun = new THREE.DirectionalLight(0xffeedd, 2.0);
+    sun.position.set(8, 20, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 1024;
     sun.shadow.mapSize.height = 1024;
@@ -65,14 +63,14 @@ class Renderer {
     this.scene.add(sun);
     this.sun = sun;
 
-    const rim = new THREE.DirectionalLight(0x8888ff, 0.4);
-    rim.position.set(-5, 10, -8);
+    const rim = new THREE.DirectionalLight(0x8888ff, 0.3);
+    rim.position.set(-5, 8, -8);
     this.scene.add(rim);
 
     // --- Fog ---
     this.scene.fog = new THREE.Fog(0x0a0a1a, 18, 30);
 
-    // --- Object groups (added once to scene) ---
+    // --- Object groups ---
     this.floorGroup = new THREE.Group();
     this.wallGroup = new THREE.Group();
     this.softBlockGroup = new THREE.Group();
@@ -91,22 +89,30 @@ class Renderer {
     this.scene.add(this.playerGroup);
     this.scene.add(this.nameLabelGroup);
 
-    // --- Reusable materials ---
+    // --- Materials ---
     this.materials = {
-      floorLight: new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.7, metalness: 0.1 }),
-      floorDark: new THREE.MeshStandardMaterial({ color: 0x12122a, roughness: 0.8, metalness: 0.0 }),
-      wall: new THREE.MeshStandardMaterial({ color: 0x444477, roughness: 0.5, metalness: 0.3 }),
-      soft: new THREE.MeshStandardMaterial({ color: 0x885533, roughness: 0.8, metalness: 0.0 }),
-      bomb: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.7 }),
-      bombGlow: new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.3 }),
-      explosionCore: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 }),
+      floorLight: new THREE.MeshStandardMaterial({ color: 0x2a2a4e, roughness: 0.7, metalness: 0.1 }),
+      floorDark: new THREE.MeshStandardMaterial({ color: 0x1a1a3a, roughness: 0.8, metalness: 0.0 }),
+      wall: new THREE.MeshStandardMaterial({ color: 0x5555aa, roughness: 0.4, metalness: 0.2 }),
+      wallCap: new THREE.MeshStandardMaterial({ color: 0x6666cc, roughness: 0.3, metalness: 0.3 }),
+      soft: new THREE.MeshStandardMaterial({ color: 0xcc8844, roughness: 0.7, metalness: 0.0 }),
+      softCap: new THREE.MeshStandardMaterial({ color: 0xdd9955, roughness: 0.6, metalness: 0.0 }),
+      bomb: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.6 }),
+      bombGlow: new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.3 }),
+      bombSpark: new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.6 }),
+      explosionCore: new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 0.9 }),
       explosionInner: new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.7 }),
-      explosionOuter: new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.4 })
+      explosionOuter: new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.4 })
     };
 
-    this.playerColors = [0xff3355, 0x33aaff, 0x33ff77, 0xffcc00];
+    this.playerColors = [
+      { body: 0xff3355, accent: 0xff6688, name: 'Rot' },
+      { body: 0x33aaff, accent: 0x66ccff, name: 'Blau' },
+      { body: 0x33ff77, accent: 0x66ff99, name: 'Grün' },
+      { body: 0xffcc00, accent: 0xffdd44, name: 'Gelb' }
+    ];
 
-    // --- Resize handler ---
+    // --- Resize ---
     this._onResize = () => {
       const w = this.container.clientWidth;
       const h = this.container.clientHeight;
@@ -116,7 +122,7 @@ class Renderer {
     };
     window.addEventListener('resize', this._onResize);
 
-    // --- State tracking ---
+    // --- State ---
     this._mapBuilt = false;
     this._mapHash = '';
     this.softBlockMeshes = {};
@@ -125,13 +131,12 @@ class Renderer {
     this.explosionMeshes = [];
     this.playerMeshes = {};
     this.nameLabels = {};
-
-    // Single shared geometries for walls (reused, not rebuilt)
-    this._wallGeo = null;
-    this._softGeo = null;
   }
 
-  // --- Build floor grid (once) ---
+  // --- Convert server pixel coords to tile coords ---
+  _toTile(px) { return px / this.tileSize; }
+
+  // --- Build floor ---
   _buildFloor() {
     this.clearGroup(this.floorGroup);
     const geo = new THREE.PlaneGeometry(1, 1);
@@ -140,104 +145,132 @@ class Renderer {
         const mat = (x + y) % 2 === 0 ? this.materials.floorLight : this.materials.floorDark;
         const mesh = new THREE.Mesh(geo, mat);
         mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(x + 0.5, -0.01, y + 0.5);
+        mesh.position.set(x + 0.5, -0.02, y + 0.5);
         mesh.receiveShadow = true;
         this.floorGroup.add(mesh);
       }
     }
+    // Border glow ring
+    const borderMat = new THREE.MeshBasicMaterial({ color: 0x4444aa, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+    const border = new THREE.Mesh(new THREE.RingGeometry(7.5, 8, 32), borderMat);
+    border.rotation.x = -Math.PI / 2;
+    border.position.set(this.cols / 2, -0.01, this.rows / 2);
+    this.floorGroup.add(border);
   }
 
-  // --- Build entire map (walls + soft blocks) from scratch ---
+  // --- Build map ---
   _buildMap(map) {
-    // Walls
     this.clearGroup(this.wallGroup);
     this.clearGroup(this.softBlockGroup);
     this.softBlockMeshes = {};
-
     if (!map) return;
 
-    const wallGeo = new THREE.BoxGeometry(1, 0.8, 1);
-    wallGeo.translate(0, 0.4, 0);
-    const softGeo = new THREE.BoxGeometry(0.85, 0.6, 0.85);
-    softGeo.translate(0, 0.3, 0);
+    const wallBody = new THREE.BoxGeometry(1, 0.7, 1);
+    wallBody.translate(0, 0.35, 0);
+    const wallCap = new THREE.BoxGeometry(0.9, 0.1, 0.9);
+    wallCap.translate(0, 0.75, 0);
+
+    const softBody = new THREE.BoxGeometry(0.9, 0.5, 0.9);
+    softBody.translate(0, 0.25, 0);
+    const softCap = new THREE.BoxGeometry(0.8, 0.1, 0.8);
+    softCap.translate(0, 0.55, 0);
 
     for (let y = 0; y < map.length; y++) {
       for (let x = 0; x < map[y].length; x++) {
         const cell = map[y][x];
         const px = x + 0.5;
-        const py = y + 0.5;
+        const pz = y + 0.5;
 
         if (cell === 'wall') {
-          const mesh = new THREE.Mesh(wallGeo, this.materials.wall);
-          mesh.position.set(px, 0, py);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          this.wallGroup.add(mesh);
+          const body = new THREE.Mesh(wallBody, this.materials.wall);
+          body.position.set(px, 0, pz);
+          body.castShadow = true;
+          body.receiveShadow = true;
+          this.wallGroup.add(body);
+          const cap = new THREE.Mesh(wallCap, this.materials.wallCap);
+          cap.position.set(px, 0, pz);
+          cap.castShadow = true;
+          this.wallGroup.add(cap);
         } else if (cell === 'soft') {
-          const key = `${x},${y}`;
-          const mesh = new THREE.Mesh(softGeo, this.materials.soft);
-          mesh.position.set(px, 0, py);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          this.softBlockGroup.add(mesh);
-          this.softBlockMeshes[key] = mesh;
+          const body = new THREE.Mesh(softBody, this.materials.soft);
+          body.position.set(px, 0, pz);
+          body.castShadow = true;
+          body.receiveShadow = true;
+          this.softBlockGroup.add(body);
+          const cap = new THREE.Mesh(softCap, this.materials.softCap);
+          cap.position.set(px, 0, pz);
+          cap.castShadow = true;
+          this.softBlockGroup.add(cap);
+          this.softBlockMeshes[`${x},${y}`] = body;
         }
       }
     }
   }
 
-  // --- Rebuild only soft blocks (when map changes) ---
   _rebuildSoftBlocks(map) {
     this.clearGroup(this.softBlockGroup);
     this.softBlockMeshes = {};
     if (!map) return;
-    const softGeo = new THREE.BoxGeometry(0.85, 0.6, 0.85);
-    softGeo.translate(0, 0.3, 0);
+    const softBody = new THREE.BoxGeometry(0.9, 0.5, 0.9);
+    softBody.translate(0, 0.25, 0);
+    const softCap = new THREE.BoxGeometry(0.8, 0.1, 0.8);
+    softCap.translate(0, 0.55, 0);
     for (let y = 0; y < map.length; y++) {
       for (let x = 0; x < map[y].length; x++) {
         if (map[y][x] === 'soft') {
-          const key = `${x},${y}`;
-          const mesh = new THREE.Mesh(softGeo, this.materials.soft);
-          mesh.position.set(x + 0.5, 0, y + 0.5);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          this.softBlockGroup.add(mesh);
-          this.softBlockMeshes[key] = mesh;
+          const px = x + 0.5;
+          const pz = y + 0.5;
+          const body = new THREE.Mesh(softBody, this.materials.soft);
+          body.position.set(px, 0, pz);
+          body.castShadow = true;
+          body.receiveShadow = true;
+          this.softBlockGroup.add(body);
+          const cap = new THREE.Mesh(softCap, this.materials.softCap);
+          cap.position.set(px, 0, pz);
+          cap.castShadow = true;
+          this.softBlockGroup.add(cap);
+          this.softBlockMeshes[`${x},${y}`] = body;
         }
       }
     }
   }
 
-  // --- Update powerups ---
+  // --- Powerups ---
   _updatePowerups(powerups) {
     this.clearGroup(this.powerupGroup);
     this.powerupMeshes = {};
     if (!powerups) return;
 
-    const colors = {
+    const iconColors = {
       'fire': 0xff6600, 'bomb': 0x44aaff, 'speed': 0x33ff77,
       'fullfire': 0xffaa00, 'kick': 0xaa44ff, 'skip': 0xff55ff
     };
+    const iconSymbols = {
+      'fire': 'F', 'bomb': 'B', 'speed': 'S',
+      'fullfire': '★', 'kick': 'K', 'skip': '✈'
+    };
 
-    const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
     for (const key in powerups) {
       const pu = powerups[key];
-      const color = colors[pu.type] || 0xffffff;
-      const mat = new THREE.MeshStandardMaterial({
-        color, emissive: color, emissiveIntensity: 0.3,
-        roughness: 0.2, metalness: 0.4
-      });
+      const color = iconColors[pu.type] || 0xffffff;
       const group = new THREE.Group();
-      const box = new THREE.Mesh(geo, mat);
-      box.position.y = 0.35;
-      box.castShadow = false;
-      const inner = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.12, 0.12),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+
+      // Floating platform
+      const plat = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.25, 0.05, 6),
+        new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5 })
       );
-      inner.position.y = 0.35;
-      group.add(box);
-      group.add(inner);
+      plat.position.y = 0.35;
+      group.add(plat);
+
+      // Icon sphere
+      const icon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      icon.position.y = 0.42;
+      group.add(icon);
+
       group.position.set(pu.x + 0.5, 0, pu.y + 0.5);
       group.userData = { floatOffset: Math.random() * Math.PI * 2 };
       this.powerupGroup.add(group);
@@ -245,35 +278,51 @@ class Renderer {
     }
   }
 
-  // --- Update bombs ---
+  // --- Bombs (positions in PIXEL coords → divide by tileSize) ---
   _updateBombs(bombs) {
     this.clearGroup(this.bombGroup);
     this.bombMeshes = {};
     if (!bombs) return;
 
-    const bombGeo = new THREE.SphereGeometry(0.25, 12, 12);
-    const glowGeo = new THREE.SphereGeometry(0.35, 8, 8);
-
     for (const bid in bombs) {
       const bomb = bombs[bid];
+      const tx = this._toTile(bomb.x);
+      const tz = this._toTile(bomb.y);
       const group = new THREE.Group();
-      const mesh = new THREE.Mesh(bombGeo, this.materials.bomb);
+
+      // Main sphere
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 10, 10),
+        this.materials.bomb
+      );
       mesh.position.y = 0.15;
       mesh.castShadow = true;
       group.add(mesh);
 
-      const glow = new THREE.Mesh(glowGeo, this.materials.bombGlow);
+      // Glow
+      const glow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3, 6, 6),
+        this.materials.bombGlow
+      );
       glow.position.y = 0.15;
       group.add(glow);
 
-      group.position.set(bomb.x, 0, bomb.y);
+      // Fuse spark
+      const spark = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 4, 4),
+        this.materials.bombSpark
+      );
+      spark.position.set(0, 0.28, 0);
+      group.add(spark);
+
+      group.position.set(tx, 0, tz);
       group.userData = { bomb };
       this.bombGroup.add(group);
       this.bombMeshes[bid] = group;
     }
   }
 
-  // --- Update explosions ---
+  // --- Explosions ---
   _updateExplosions(explosions) {
     this.clearGroup(this.explosionGroup);
     this.explosionMeshes = [];
@@ -286,40 +335,44 @@ class Renderer {
       if (progress >= 1) continue;
 
       for (const cell of exp.cells) {
+        const cx = cell.x + 0.5;
+        const cz = cell.y + 0.5;
         const isCenter = cell.x === exp.cells[0].x && cell.y === exp.cells[0].y;
+        const radius = isCenter ? 0.55 : 0.4;
 
-        const coreMat = this.materials.explosionCore.clone();
-        coreMat.opacity = (1 - progress) * 0.9;
+        // Core
         const core = new THREE.Mesh(
-          new THREE.CylinderGeometry(isCenter ? 0.6 : 0.4, isCenter ? 0.6 : 0.4, 0.3, 8), coreMat
+          new THREE.CylinderGeometry(radius, radius, 0.3 + progress * 0.15, 8),
+          this.materials.explosionCore.clone()
         );
-        core.position.set(cell.x + 0.5, 0.2 + progress * 0.1, cell.y + 0.5);
+        core.material.opacity = (1 - progress) * 0.95;
+        core.position.set(cx, 0.15 + progress * 0.1, cz);
 
-        const innerMat = this.materials.explosionInner.clone();
-        innerMat.opacity = (1 - progress) * 0.7;
-        const inner = new THREE.Mesh(
-          new THREE.CylinderGeometry(isCenter ? 0.8 : 0.55, isCenter ? 0.8 : 0.55, 0.2 + progress * 0.1, 8), innerMat
+        // Mid
+        const mid = new THREE.Mesh(
+          new THREE.CylinderGeometry(radius * 1.3, radius * 1.3, 0.2, 8),
+          this.materials.explosionInner.clone()
         );
-        inner.position.set(cell.x + 0.5, 0.1, cell.y + 0.5);
+        mid.material.opacity = (1 - progress) * 0.7;
+        mid.position.set(cx, 0.08, cz);
 
-        const outerMat = this.materials.explosionOuter.clone();
-        outerMat.opacity = (1 - progress) * 0.5;
+        // Outer
         const outer = new THREE.Mesh(
-          new THREE.CylinderGeometry(isCenter ? 0.9 : 0.65, isCenter ? 0.9 : 0.65, 0.1, 8), outerMat
+          new THREE.CylinderGeometry(radius * 1.6, radius * 1.6, 0.08, 8),
+          this.materials.explosionOuter.clone()
         );
-        outer.position.set(cell.x + 0.5, 0.05, cell.y + 0.5);
+        outer.material.opacity = (1 - progress) * 0.5;
+        outer.position.set(cx, 0.04, cz);
 
         this.explosionGroup.add(core);
-        this.explosionGroup.add(inner);
+        this.explosionGroup.add(mid);
         this.explosionGroup.add(outer);
-        this.explosionMeshes.push({ core, inner, outer, progress });
       }
     }
   }
 
-  // --- Update players ---
+  // --- Players (positions in PIXEL coords → divide by tileSize) ---
   _updatePlayers(players) {
-    // Remove players that disappeared
     for (const pid in this.playerMeshes) {
       if (!players || !players[pid]) {
         this.playerGroup.remove(this.playerMeshes[pid].group);
@@ -328,81 +381,105 @@ class Renderer {
         delete this.nameLabels[pid];
       }
     }
-
     if (!players) return;
 
     for (const pid in players) {
-      const player = players[pid];
-      const colorIdx = player.color !== undefined ? player.color % this.playerColors.length : 0;
-      const color = this.playerColors[colorIdx];
+      const p = players[pid];
+      const cIdx = p.color !== undefined ? p.color % this.playerColors.length : 0;
+      const pc = this.playerColors[cIdx];
+
+      // Convert pixel → tile coordinates
+      const tx = this._toTile(p.x);
+      const tz = this._toTile(p.y);
 
       if (!this.playerMeshes[pid]) {
-        // Create new player
         const group = new THREE.Group();
 
-        const bodyGeo = new THREE.CylinderGeometry(0.28, 0.35, 0.5, 10);
+        // --- Chibi body (big head, small body like Saturn Bomberman) ---
+        // Feet/body cylinder
         const bodyMat = new THREE.MeshStandardMaterial({
-          color, roughness: 0.4, metalness: 0.2,
-          emissive: color, emissiveIntensity: 0.1
+          color: pc.body, roughness: 0.4, metalness: 0.1,
+          emissive: pc.body, emissiveIntensity: 0.05
         });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.25;
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.35, 8), bodyMat);
+        body.position.y = 0.17;
         body.castShadow = true;
         group.add(body);
 
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xffddaa, roughness: 0.4, metalness: 0.0 });
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), headMat);
-        head.position.y = 0.6;
+        // Big head (chibi style)
+        const headMat = new THREE.MeshStandardMaterial({
+          color: 0xffddaa, roughness: 0.3, metalness: 0.0
+        });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), headMat);
+        head.position.y = 0.5;
         head.castShadow = true;
         group.add(head);
 
+        // Headband
         const bandMat = new THREE.MeshStandardMaterial({
-          color, roughness: 0.3, metalness: 0.1,
-          emissive: color, emissiveIntensity: 0.2
+          color: pc.body, roughness: 0.2, metalness: 0.1,
+          emissive: pc.body, emissiveIntensity: 0.15
         });
-        const band = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.04, 6, 10), bandMat);
-        band.position.y = 0.5;
+        const band = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.055, 6, 10), bandMat);
+        band.position.y = 0.42;
         band.rotation.x = Math.PI / 2;
         group.add(band);
 
-        const dirMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.3 });
-        const dirIndicator = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 4), dirMat);
-        dirIndicator.position.set(0, 0.65, 0.25);
-        group.add(dirIndicator);
+        // Eyes (two small white spheres)
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const eyeGeo = new THREE.SphereGeometry(0.04, 6, 6);
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(0.08, 0.5, 0.2);
+        group.add(leftEye);
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(-0.08, 0.5, 0.2);
+        group.add(rightEye);
 
-        this.playerMeshes[pid] = { group, body, head, band, dirIndicator };
+        // Pupils
+        const pupilMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+        const pupilGeo = new THREE.SphereGeometry(0.025, 4, 4);
+        const lPupil = new THREE.Mesh(pupilGeo, pupilMat);
+        lPupil.position.set(0.08, 0.5, 0.24);
+        group.add(lPupil);
+        const rPupil = new THREE.Mesh(pupilGeo, pupilMat);
+        rPupil.position.set(-0.08, 0.5, 0.24);
+        group.add(rPupil);
+
+        this.playerMeshes[pid] = { group, body, head };
         this.playerGroup.add(group);
 
-        // Name label sprite
+        // Name label
         const canvas = document.createElement('canvas');
         canvas.width = 256;
         canvas.height = 48;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(0, 0, 256, 48);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 24px monospace';
+        ctx.font = 'bold 22px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(player.name || 'Player', 128, 24);
+        ctx.fillText(p.name || 'Player', 128, 26);
 
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
-        const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
-        const sprite = new THREE.Sprite(spriteMat);
-        sprite.scale.set(1.5, 0.3, 1);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        const sprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false })
+        );
+        sprite.scale.set(1.2, 0.25, 1);
         this.nameLabels[pid] = sprite;
         this.nameLabelGroup.add(sprite);
       }
 
       const mesh = this.playerMeshes[pid];
-      mesh.group.position.set(player.x, 0, player.y);
+      // Set in TILE coordinates (p.x/p.y are pixels, divide by tileSize)
+      mesh.group.position.set(tx, 0, tz);
 
       // Direction
       const rotMap = { right: 0, left: Math.PI, down: Math.PI / 2, up: -Math.PI / 2 };
-      mesh.group.rotation.y = rotMap[player.dir] || 0;
+      mesh.group.rotation.y = rotMap[p.dir] || 0;
 
-      if (!player.alive) {
+      if (!p.alive) {
         mesh.group.visible = false;
         if (this.nameLabels[pid]) this.nameLabels[pid].visible = false;
         continue;
@@ -411,26 +488,19 @@ class Renderer {
       if (this.nameLabels[pid]) this.nameLabels[pid].visible = true;
 
       // Invincibility flash
-      if (player.invincibleUntil > Date.now()) {
-        const flash = Math.sin(this.time * 20) > 0 ? 1 : 0.2;
-        mesh.body.material.opacity = flash;
-        mesh.head.material.opacity = flash;
-        mesh.body.material.transparent = true;
-        mesh.head.material.transparent = true;
-      } else {
-        mesh.body.material.opacity = 1;
-        mesh.head.material.opacity = 1;
-        mesh.body.material.transparent = false;
-        mesh.head.material.transparent = false;
+      if (p.invincibleUntil > Date.now()) {
+        const flash = Math.sin(this.time * 20) > 0;
+        mesh.group.visible = flash;
       }
 
+      // Name label
       if (this.nameLabels[pid]) {
-        this.nameLabels[pid].position.set(player.x, 0.9, player.y);
+        this.nameLabels[pid].position.set(tx, 0.95, tz);
       }
     }
   }
 
-  // --- Main render loop ---
+  // --- Main render ---
   render(state, dt) {
     if (!this.renderer) return;
     if (!state) {
@@ -440,7 +510,7 @@ class Renderer {
 
     this.time += dt;
 
-    // --- Build map ONCE (first time only) ---
+    // Build map ONCE
     if (!this._mapBuilt && state.map) {
       this._buildFloor();
       this._buildMap(state.map);
@@ -448,66 +518,63 @@ class Renderer {
       this._mapBuilt = true;
     }
 
-    // --- Check for map changes (soft blocks destroyed) ---
+    // Soft block changes
     if (state.map) {
-      const newHash = JSON.stringify(state.map);
-      if (newHash !== this._mapHash) {
+      const hash = JSON.stringify(state.map);
+      if (hash !== this._mapHash) {
         this._rebuildSoftBlocks(state.map);
-        this._mapHash = newHash;
+        this._mapHash = hash;
       }
     }
 
-    // --- Powerups ---
+    // Update dynamic objects
     this._updatePowerups(state.powerups);
     for (const key in this.powerupMeshes) {
       const g = this.powerupMeshes[key];
-      g.position.y = Math.sin(this.time * 1.5 + g.userData.floatOffset) * 0.1 + 0.1;
-      g.rotation.y += dt * 0.5;
+      g.position.y = Math.sin(this.time * 1.5 + g.userData.floatOffset) * 0.08 + 0.08;
+      g.rotation.y += dt * 0.8;
     }
 
-    // --- Bombs ---
     this._updateBombs(state.bombs);
     for (const bid in this.bombMeshes) {
       const g = this.bombMeshes[bid];
-      const pulse = 1 + Math.sin(this.time * 4) * 0.05;
+      const pulse = 1 + Math.sin(this.time * 5) * 0.04;
       g.scale.set(pulse, pulse, pulse);
     }
 
-    // --- Explosions ---
     this._updateExplosions(state.explosions);
 
-    // --- Players ---
     this._updatePlayers(state.players);
     for (const pid in this.playerMeshes) {
-      const mesh = this.playerMeshes[pid];
-      if (mesh.group.visible) {
-        mesh.group.position.y = Math.sin(this.time * 6) * 0.02;
+      const m = this.playerMeshes[pid];
+      if (m.group.visible) {
+        m.group.position.y = Math.sin(this.time * 5) * 0.015;
       }
     }
 
-    // --- Render ---
     this.renderer.render(this.scene, this.camera);
   }
 
   resize(cols, rows, tileSize) {
     this.cols = cols || 15;
     this.rows = rows || 13;
+    this.tileSize = tileSize || 48;
 
-    const centerX = this.cols / 2;
-    const centerZ = this.rows / 2;
+    const cx = this.cols / 2;
+    const cz = this.rows / 2;
     const maxDim = Math.max(this.cols, this.rows);
     const dist = maxDim * 0.9 + 4;
 
-    this.camera.position.set(centerX + dist * 0.5, dist * 0.55, centerZ + dist * 0.5);
-    this.camera.lookAt(centerX, 0, centerZ);
+    this.camera.position.set(cx + dist * 0.5, dist * 0.55, cz + dist * 0.5);
+    this.camera.lookAt(cx, 0, cz);
   }
 
   clearGroup(group) {
     while (group.children.length > 0) {
-      const child = group.children[0];
-      if (child.geometry) child.geometry.dispose();
-      if (child.material) child.material.dispose();
-      group.remove(child);
+      const c = group.children[0];
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+      group.remove(c);
     }
   }
 
