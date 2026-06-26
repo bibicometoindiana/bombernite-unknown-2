@@ -66,7 +66,7 @@ class NetworkClient {
   }
 
   send(data) {
-    if (this.ws && this.connected) {
+    if (this.ws) {
       this.ws.send(JSON.stringify(data));
     }
   }

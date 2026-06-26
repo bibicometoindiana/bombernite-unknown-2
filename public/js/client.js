@@ -244,14 +244,14 @@
       }
     });
 
-    // Connect on load
-    net.connect();
+    // Connect on load - MUST set handlers BEFORE connect
     net.onConnect = () => {
       ui.setConnectionStatus(true);
     };
     net.onDisconnect = () => {
       ui.setConnectionStatus(false);
     };
+    net.connect();
   }
 
   // --- Game Loop ---
@@ -263,8 +263,9 @@
       renderer.render(gameState, dt);
     }
 
-    // Continuously send bomb key state
-    if (gameRunning) {
+    // Continuously send input (throttled to 20/s)
+    if (gameRunning && (!window._lastInputSend || Date.now() - window._lastInputSend > 50)) {
+      window._lastInputSend = Date.now();
       const input = window.input.getInputPacket();
       net.sendInput(input);
     }
