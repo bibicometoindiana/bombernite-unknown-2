@@ -47,7 +47,7 @@ class UIManager {
       title.textContent = '🏆 SIEGER! 🏆';
       winnerDisplay.innerHTML = `
         <div style="font-size: 24px; margin-bottom: 10px;">${colors[colorIdx]}</div>
-        <div style="font-size: 16px;">${data.winner.name}</div>
+        <div style="font-size: 16px;">${data.winner.name || data.winner.id || 'Unbekannt'}</div>
         <div style="font-size: 10px; color: #888; margin-top: 5px;">Siege: ${data.winner.wins || 1}</div>
       `;
     } else {
@@ -60,7 +60,7 @@ class UIManager {
       let orderHtml = '<div style="font-size: 10px; color: #666; margin-bottom: 5px;">REIHENFOLGE</div>';
       data.finishOrder.forEach((p, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        orderHtml += `<div>${medal} ${p.name}</div>`;
+        orderHtml += `<div>${medal} ${p.name || p.id || 'Unbekannt'}</div>`;
       });
       finishOrder.innerHTML = orderHtml;
     }

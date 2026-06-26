@@ -120,12 +120,13 @@
         // Sound handled by state change detection
       }
 
-      // Check if any player died (new death)
+      // Check if any player died (new death) - only play sound ONCE
       if (data.players) {
         for (const pid in data.players) {
           const p = data.players[pid];
-          if (!p.alive && pid === playerId && gameRunning) {
+          if (!p.alive && pid === playerId && gameRunning && !window._deathSoundPlayed) {
             audio.playerDeath();
+            window._deathSoundPlayed = true;
           }
         }
       }
@@ -145,6 +146,7 @@
 
     net.on('game_over', (data) => {
       gameRunning = false;
+      window._deathSoundPlayed = false; // Reset for next round
       ui.showGameOver(data);
 
       if (data.winner && data.winner.id === playerId) {
